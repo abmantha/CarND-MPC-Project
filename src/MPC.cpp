@@ -6,7 +6,7 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 25;
+size_t N = 10;
 double dt = 0.05;
 
 // This value assumes the model presented in the classroom is used.
@@ -48,20 +48,20 @@ public:
     // the Solver function below.
         fg[0] = 0;
 
-        for (int t = 0; t < N; ++t)
+        for (int t = 0; t < N; t++)
         {
             fg[0] += CppAD::pow(vars[cte_start + t], 2);
             fg[0] += CppAD::pow(vars[epsi_start + t], 2);
             fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2);
         }
 
-        for (int t = 0; t < N - 1; ++t)
+        for (int t = 0; t < N - 1; t++)
         {
             fg[0] += CppAD::pow(vars[delta_start + t], 2);
             fg[0] += CppAD::pow(vars[a_start + t], 2);
         }
 
-        for (int t = 0; t < N - 2; ++t)
+        for (int t = 0; t < N - 2; t++)
         {
             fg[0] += CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
             fg[0] += CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
@@ -74,44 +74,27 @@ public:
         fg[1 + cte_start] = vars[cte_start];
         fg[1 + epsi_start] = vars[epsi_start];
 
-        for (int t = 1; t < N; ++t)
+        for (int t = 1; t < N; t++)
         {
-            std::cout << "Check 1" << std::endl;
             AD<double> x1 = vars[x_start + t];
-            std::cout << "Check 2" << std::endl;
             AD<double> y1 = vars[y_start + t];
-            std::cout << "Check 3" << std::endl;
             AD<double> psi1 = vars[psi_start + t];
-            std::cout << "Check 4" << std::endl;
             AD<double> v1 = vars[v_start + t];
-            std::cout << "Check 5" << std::endl;
             AD<double> cte1 = vars[cte_start + t];
-            std::cout << "Check 6" << std::endl;
             AD<double> epsi1 = vars[epsi_start + t];
-            std::cout << "Check 7" << std::endl;
 
             AD<double> x0 = vars[x_start + t - 1];
-            std::cout << "Check 8" << std::endl;
             AD<double> y0 = vars[y_start + t - 1];
-            std::cout << "Check 9" << std::endl;
             AD<double> psi0 = vars[psi_start + t - 1];
-            std::cout << "Check 10" << std::endl;
             AD<double> v0 = vars[v_start + t - 1];
-            std::cout << "Check 11" << std::endl;            
             AD<double> cte0 = vars[cte_start + t - 1];
-            std::cout << "Check 12" << std::endl; 
             AD<double> epsi0 = vars[epsi_start + t - 1];
-            std::cout << "Check 13" << std::endl; 
 
             AD<double> delta0 = vars[delta_start + t - 1];
-            std::cout << "Check 14" << std::endl; 
             AD<double> alpha0 = vars[a_start + t - 1];
-            std::cout << "Check 15" << std::endl; 
 
-            AD<double> f0 = coeffs[0] + coeffs[1]*x0 + coeffs[2]*x0*x0;
-            std::cout << "Check 16" << std::endl; 
-            AD<double> psi_des0 = CppAD::atan(coeffs[1] + coeffs[2]*x0);
-            std::cout << "Check 17" << std::endl; 
+            AD<double> f0 = coeffs[0] + coeffs[1]*x0 + coeffs[2]*x0*x0 + coeffs[3]*x0*x0*x0;
+            AD<double> psi_des0 = CppAD::atan(coeffs[1] + 2*coeffs[2]*x0 + 3*coeffs[3]*x0*x0);
 
             fg[x_start + t + 1] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
             fg[y_start + t + 1] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
@@ -130,7 +113,6 @@ MPC::MPC() {}
 MPC::~MPC() {}
 
 vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
-    bool ok = true;
     size_t i;
     typedef CPPAD_TESTVECTOR(double) Dvector;
 
@@ -166,22 +148,22 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
 
     Dvector vars_lowerbound(n_vars);
     Dvector vars_upperbound(n_vars);
-    for (int i = 0; i < delta_start; ++i)
+    for (int i = 0; i < delta_start; i++)
     {
         vars_lowerbound[i] = -1.0e19;
         vars_upperbound[i] = 1.0e19;
     }    
 
-    for (int i = delta_start; i < a_start; ++i)
+    for (int i = delta_start; i < a_start; i++)
     {
         vars_lowerbound[i] = -0.436332;
         vars_upperbound[i] = 0.436332;
     }
 
-    for (int i = a_start; i < n_vars; ++i)
+    for (int i = a_start; i < n_vars; i++)
     {
         vars_lowerbound[i] = -1.0;
-        vars_lowerbound[i] = 1.0;
+        vars_upperbound[i] = 1.0;
     }
 
     // Lower and upper limits for the constraints
@@ -232,16 +214,13 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     // place to return solution
     CppAD::ipopt::solve_result<Dvector> solution;
 
-    std::cout << "Before solve" << std::endl;
-
     // solve the problem
     CppAD::ipopt::solve<Dvector, FG_eval>(
       options, vars, vars_lowerbound, vars_upperbound, constraints_lowerbound,
       constraints_upperbound, fg_eval, solution);
 
-    std::cout << "After solve" << std::endl;
-
     // Check some of the solution values
+    bool ok = true;
     ok &= solution.status == CppAD::ipopt::solve_result<Dvector>::success;
 
     // Cost
@@ -253,6 +232,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     //
     // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
     // creates a 2 element double vector.
+    std::cout << "Solution size: " << solution.x.size() << std::endl;
     return { 
         solution.x[x_start + 1], solution.x[y_start + 1],
         solution.x[psi_start + 1], solution.x[v_start + 1],
