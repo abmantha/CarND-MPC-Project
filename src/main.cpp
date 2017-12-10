@@ -78,6 +78,16 @@ int main() {
     // The 2 signifies a websocket event
     string sdata = string(data).substr(0, length);
     cout << sdata << endl;
+
+    std::vector<double> x_vals;
+    std::vector<double> y_vals;
+    std::vector<double> psi_vals;
+    std::vector<double> v_vals;
+    std::vector<double> cte_vals;
+    std::vector<double> epsi_vals;
+    std::vector<double> delta_vals;
+    std::vector<double> a_vals;
+
     if (sdata.size() > 2 && sdata[0] == '4' && sdata[1] == '2') {
       string s = hasData(sdata);
       if (s != "") {
@@ -92,14 +102,61 @@ int main() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 
+          Eigen::VectorXd ptsx_car(ptsx.size());
+          Eigen::VectorXd ptsy_car(ptsy.size());
+          for (int i = 0; i < ptsx.size(); ++i)
+          {
+            double x = ptsx[i] - px;
+            double y = ptsy[i] - py;
+            ptsx_car[i] = x * std::cos(-psi) - y * std::sin(-psi);
+            ptsy_car[i] = x * std::sin(-psi) + y * std::cos(-psi);
+          }
+
+          auto coeffs = polyfit(ptsx_car, ptsy_car, 3);
+          double cte = py - polyeval(coeffs, px);
+          double epsi = atan(coeffs[1] + coeffs[2]*px);
+
+          Eigen::VectorXd state(6);
+          state << px, py, psi, v, cte, epsi;
+
+          x_vals.push_back(state[0]);
+          y_vals.push_back(state[1]);
+          psi_vals.push_back(state[2]);
+          v_vals.push_back(state[3]);
+          cte_vals.push_back(state[4]);
+          epsi_vals.push_back(state[5]);
+
+          auto vars = mpc.Solve(state, coeffs);
+
+          x_vals.push_back(vars[0]);
+          y_vals.push_back(vars[1]);
+          psi_vals.push_back(vars[2]);
+          v_vals.push_back(vars[3]);
+          cte_vals.push_back(vars[4]);
+          epsi_vals.push_back(vars[5]);
+          delta_vals.push_back(vars[6]);
+          a_vals.push_back(vars[7]);
+
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
           * Both are in between [-1, 1].
           *
           */
-          double steer_value;
-          double throttle_value;
+          double steer_value = -1 * vars[6];
+          steer_value /= deg2rad(25);
+
+          double throttle_value = vars[7];
+          if (throttle_value >= 1)
+          {
+            throttle_value = 1;
+          } 
+          else if (throttle_value <= -1)
+          {
+            throttle_value = -1;
+          }
+
+          // ABHISHEK: Calculate steering angle and throttle using MPC
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -114,6 +171,9 @@ int main() {
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
 
+          mpc_x_vals.push_back(vars[0]);
+          mpc_y_vals.push_back(vars[1]);
+
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
 
@@ -124,10 +184,12 @@ int main() {
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
 
+          next_x_vals.push_back(px);
+          next_y_vals.push_back(py);
+
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
-
-
+          
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
           // Latency
