@@ -79,17 +79,6 @@ int main() {
     string sdata = string(data).substr(0, length);
     cout << sdata << endl;
 
-    Eigen::VectorXd state(6);
-
-    std::vector<double> x_vals = {};
-    std::vector<double> y_vals = {};
-    std::vector<double> psi_vals = {};
-    std::vector<double> v_vals = {};
-    std::vector<double> cte_vals = {};
-    std::vector<double> epsi_vals = {};
-    std::vector<double> delta_vals = {};
-    std::vector<double> a_vals = {};
-
     if (sdata.size() > 2 && sdata[0] == '4' && sdata[1] == '2') {
       string s = hasData(sdata);
       if (s != "") {
@@ -104,43 +93,38 @@ int main() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 
-          Eigen::VectorXd ptsx_car(ptsx.size());
-          Eigen::VectorXd ptsy_car(ptsy.size());
+          // Eigen::VectorXd ptsx_car(ptsx.size());
+          // Eigen::VectorXd ptsy_car(ptsy.size());
+
           for (int i = 0; i < ptsx.size(); i++)
           {
             double x = ptsx[i] - px;
             double y = ptsy[i] - py;
-            ptsx_car[i] = x * std::cos(-psi) + y * std::sin(-psi);
-            ptsy_car[i] = -x * std::sin(-psi) + y * std::cos(-psi);
+            ptsx[i] = x * std::cos(-psi) - y * std::sin(-psi);
+            ptsy[i] = x * std::sin(-psi) + y * std::cos(-psi);
           }
 
-          auto coeffs = polyfit(ptsx_car, ptsy_car, 3);
-          double cte = polyeval(coeffs, px) - py;
-          // double psi_des = atan(coeffs[1] + 2*coeffs[2]*px + 3*coeffs[3]*px*px);
+          double* ptrx = &ptsx[0];
+          Eigen::Map<Eigen::VectorXd> ptsx_transform(ptrx, 6);
 
-          // double epsi = psi - psi_des;
-          double epsi = -atan(coeffs[1] + 2*coeffs[2]*px + 3*coeffs[3]*px*px);
-          state << px, py, psi, v, cte, epsi;
+          double* ptry = &ptsy[0];
+          Eigen::Map<Eigen::VectorXd> ptsy_transform(ptry, 6);
 
+          auto coeffs = polyfit(ptsx_transform, ptsy_transform, 3);
+          double cte = polyeval(coeffs, 0);
+          double epsi = -atan(coeffs[1]);
+
+          Eigen::VectorXd state(6);
+          state << 0, 0, 0, v, cte, epsi;
           auto vars = mpc.Solve(state, coeffs);
-
-          x_vals.push_back(vars[0]);
-          y_vals.push_back(vars[1]);
-          psi_vals.push_back(vars[2]);
-          v_vals.push_back(vars[3]);
-          cte_vals.push_back(vars[4]);
-          epsi_vals.push_back(vars[5]);
-          delta_vals.push_back(vars[6]);
-          a_vals.push_back(vars[7]);
-
-          double steer_value = -1 * vars[6];
-          steer_value /= deg2rad(25);
-          double throttle_value = vars[7];
+          double steer_value = vars[0];
+          double throttle_value = vars[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = steer_value;
+          double Lf = 2.67;
+          msgJson["steering_angle"] = steer_value / (Lf*deg2rad(25.0));
           msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory 
@@ -150,14 +134,17 @@ int main() {
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
 
-          for (int i = 0; i < x_vals.size(); i++)
+          for (int i = 2; i < vars.size(); i++)
           {
-            mpc_x_vals.push_back(x_vals[i]);
-            mpc_y_vals.push_back(y_vals[i]);
+            if (i % 2 == 0) 
+            {
+              mpc_x_vals.push_back(vars[i]);
+            }
+            else 
+            {
+              mpc_y_vals.push_back(vars[i]);
+            }
           }
-
-          // mpc_x_vals.push_back(vars[0]);
-          // mpc_y_vals.push_back(vars[1]);
 
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
@@ -169,14 +156,13 @@ int main() {
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
 
-          for (int i = 0; i < ptsx.size(); i++)
+          double poly_inc = 2.5;
+          int num_points = 25;
+          for (int i = 1; i < num_points; i++)
           {
-            next_x_vals.push_back(ptsx[i]);
-            next_y_vals.push_back(ptsy[i]);
+            next_x_vals.push_back(poly_inc*i);
+            next_y_vals.push_back(polyeval(coeffs, poly_inc*i));
           }
-
-          // next_x_vals.push_back(px);
-          // next_y_vals.push_back(py);
 
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
@@ -184,12 +170,6 @@ int main() {
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
           // Latency
-          // The purpose is to mimic real driving conditions where
-          // the car does actuate the commands instantly.
-          //
-          // Feel free to play around with this value but should be to drive
-          // around the track with 100ms latency.
-          //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
           this_thread::sleep_for(chrono::milliseconds(100));
