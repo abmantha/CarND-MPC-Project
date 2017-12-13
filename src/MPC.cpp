@@ -78,7 +78,7 @@ public:
             The factor can be very large(>1000) until the controller becomes more stable.
             But you do not need it if you properly implemented latency compensation.
             */
-            fg[0] += 2000*(CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2)); // 200 
+            fg[0] += 200*(CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2)); // 200 
             fg[0] += 200*(CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2)); // 10
         }
 
@@ -259,8 +259,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     vector<double> result;
 
     // take the next value instead (after 100ms)
-    result.push_back(solution.x[delta_start+1]);
-    result.push_back(solution.x[a_start+1]);
+    result.push_back((solution.x[delta_start+1] + solution.x[delta_start + 2])/2);
+    result.push_back((solution.x[a_start+1] + solution.x[a_start + 2])/2);
 
     // store it in variables for next run
     prevDelta = solution.x[delta_start + 1];
