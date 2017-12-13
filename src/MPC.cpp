@@ -6,7 +6,7 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 10;
+size_t N = 25;
 double dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
@@ -52,34 +52,21 @@ public:
 
         for (int t = 0; t < N; t++)
         {
-
-            /*
-                Increasing the penalty for CTE can lead to a more unstable control behavior as 
-                the car can overshoot the waypoint trajectory and starts to oscillating.
-            */
-                // 800, 100, 100
-            fg[0] += 1000*CppAD::pow(vars[cte_start + t], 2); // 4000
-            fg[0] += 100*CppAD::pow(vars[epsi_start + t], 2); // 100
-            fg[0] += 100*CppAD::pow(vars[v_start + t] - ref_v, 2); // 100
+            fg[0] += 1000*CppAD::pow(vars[cte_start + t], 2); 
+            fg[0] += 100*CppAD::pow(vars[epsi_start + t], 2);
+            fg[0] += 100*CppAD::pow(vars[v_start + t] - ref_v, 2); 
         }
 
         for (int t = 0; t < N - 1; t++)
         {
-            // 80000
-            fg[0] += 160000*CppAD::pow(vars[delta_start + t], 2); // 160000
-            fg[0] += CppAD::pow(vars[a_start + t], 2); // 5
+            fg[0] += 160000*CppAD::pow(vars[delta_start + t], 2); 
+            fg[0] += CppAD::pow(vars[a_start + t], 2); 
         }
 
         for (int t = 0; t < N - 2; t++)
         {
-            /*
-            In my experience, increasing the penalty factor for the steering 
-            angle gap will lead to a more stable control behaviour at higher velocity.
-            The factor can be very large(>1000) until the controller becomes more stable.
-            But you do not need it if you properly implemented latency compensation.
-            */
-            fg[0] += 10*(CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2)); // 200 
-            fg[0] += 10*(CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2)); // 10
+            fg[0] += 100*(CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2)); 
+            fg[0] += 10*(CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2)); 
         }
 
         fg[1 + x_start] = vars[x_start];
@@ -259,8 +246,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     vector<double> result;
 
     // take the next value instead (after 100ms)
-    result.push_back((solution.x[delta_start+1] + solution.x[delta_start + 2])/2);
-    result.push_back((solution.x[a_start+1] + solution.x[a_start + 2])/2);
+    result.push_back((solution.x[delta_start+1] + solution.x[delta_start + 2] + solution.x[delta_start + 3])/3);
+    result.push_back((solution.x[a_start+1] + solution.x[a_start + 2] + solution.x[a_start + 3])/2);
 
     // store it in variables for next run
     prevDelta = solution.x[delta_start + 1];
