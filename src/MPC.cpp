@@ -6,8 +6,8 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 10;
-double dt = 0.1;
+size_t N = 25;
+double dt = 0.05;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -52,21 +52,21 @@ public:
 
         for (int t = 0; t < N; t++)
         {
-            fg[0] += 2000*CppAD::pow(vars[cte_start + t] - ref_cte, 2); // 4000
-            fg[0] += 100*CppAD::pow(vars[epsi_start + t] - ref_epsi, 2); // 100
+            fg[0] += 3000*CppAD::pow(vars[cte_start + t], 2); // 4000
+            fg[0] += 100*CppAD::pow(vars[epsi_start + t], 2); // 100
             fg[0] += 100*CppAD::pow(vars[v_start + t] - ref_v, 2); // 100
         }
 
         for (int t = 0; t < N - 1; t++)
         {
-            fg[0] += 80000*CppAD::pow(vars[delta_start + t], 2); // 1000
-            // fg[0] += CppAD::pow(vars[a_start + t], 2); // 5
+            fg[0] += 160000*CppAD::pow(vars[delta_start + t], 2); // 1000
+            fg[0] += CppAD::pow(vars[a_start + t], 2); // 5
         }
 
         for (int t = 0; t < N - 2; t++)
         {
-            fg[0] += 200*CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2); // 200 
-            fg[0] += 100*CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2); // 10
+            fg[0] += 2000*(CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2)); // 200 
+            fg[0] += 200*(CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2)); // 10
         }
 
         fg[1 + x_start] = vars[x_start];
