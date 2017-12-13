@@ -6,7 +6,7 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 25;
+size_t N = 10;
 double dt = 0.05;
 
 // This value assumes the model presented in the classroom is used.
@@ -52,8 +52,8 @@ public:
 
         for (int t = 0; t < N; t++)
         {
-            fg[0] += 3000*CppAD::pow(vars[cte_start + t], 2); // 4000
-            fg[0] += 100*CppAD::pow(vars[epsi_start + t], 2); // 100
+            fg[0] += 4000*CppAD::pow(vars[cte_start + t], 2); // 4000
+            fg[0] += 400*CppAD::pow(vars[epsi_start + t], 2); // 100
             fg[0] += 100*CppAD::pow(vars[v_start + t] - ref_v, 2); // 100
         }
 
@@ -235,9 +235,6 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     // creates a 2 element double vector.
 
     vector<double> result;
-
-    std::cout << "Actuators -- DELTA: " << solution.x[delta_start] << " ACCEL: " << solution.x[a_start] << std::endl;
-
     result.push_back(solution.x[delta_start]);
     result.push_back(solution.x[a_start]);
 

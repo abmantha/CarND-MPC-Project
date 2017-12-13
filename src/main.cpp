@@ -93,6 +93,16 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
+          // double delta = j[1]["steering_angle"];
+          // double acceleration = j[1]["throttle"];
+
+          // // double latency = 0.1;
+          // // double Lf = 2.67;
+          // // v = v * 0.447;
+          // // px = px + v * std::cos(psi) * latency;
+          // // py = py + v * std::sin(psi) * latency;
+          // // psi = psi * v * delta / Lf * latency;
+          // // v = v + acceleration * latency;
 
           // Eigen::VectorXd ptsx_car(ptsx.size());
           // Eigen::VectorXd ptsy_car(ptsy.size());
@@ -124,7 +134,6 @@ int main() {
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          double Lf = 2.67;
           msgJson["steering_angle"] = steer_value / (deg2rad(25.0));
           msgJson["throttle"] = throttle_value;
 
