@@ -93,19 +93,10 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
-          // double delta = j[1]["steering_angle"];
-          // double acceleration = j[1]["throttle"];
+          double delta = j[1]["steering_angle"];
+          double acceleration = j[1]["throttle"];
 
-          // // double latency = 0.1;
-          // // double Lf = 2.67;
-          // // v = v * 0.447;
-          // // px = px + v * std::cos(psi) * latency;
-          // // py = py + v * std::sin(psi) * latency;
-          // // psi = psi * v * delta / Lf * latency;
-          // // v = v + acceleration * latency;
-
-          // Eigen::VectorXd ptsx_car(ptsx.size());
-          // Eigen::VectorXd ptsy_car(ptsy.size());
+          v = v * 0.44704;
 
           for (int i = 0; i < ptsx.size(); i++)
           {
@@ -124,6 +115,16 @@ int main() {
           auto coeffs = polyfit(ptsx_transform, ptsy_transform, 3);
           double cte = polyeval(coeffs, 0);
           double epsi = -atan(coeffs[1]);
+
+          // double latency = 0.1;
+          // double Lf = 2.67;
+          // px = 0;
+          // py = 0;
+          // // psi = v * delta / Lf * latency;
+          // psi = 0;
+          // v = v + acceleration * latency;
+          // cte = cte + v * std::sin(epsi) * latency;
+          // epsi = epsi + v * delta / Lf * latency;
 
           Eigen::VectorXd state(6);
           state << 0, 0, 0, v, cte, epsi;

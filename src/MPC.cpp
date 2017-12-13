@@ -52,6 +52,12 @@ public:
 
         for (int t = 0; t < N; t++)
         {
+
+            /*
+                Increasing the penalty for CTE can lead to a more unstable control behavior as 
+                the car can overshoot the waypoint trajectory and starts to oscillating.
+            */
+                // 800, 100, 100
             fg[0] += 2000*CppAD::pow(vars[cte_start + t], 2); // 4000
             fg[0] += 100*CppAD::pow(vars[epsi_start + t], 2); // 100
             fg[0] += 100*CppAD::pow(vars[v_start + t] - ref_v, 2); // 100
@@ -59,12 +65,19 @@ public:
 
         for (int t = 0; t < N - 1; t++)
         {
-            fg[0] += 160000*CppAD::pow(vars[delta_start + t], 2); // 1000
+            // 80000
+            fg[0] += 160000*CppAD::pow(vars[delta_start + t], 2); // 160000
             fg[0] += CppAD::pow(vars[a_start + t], 2); // 5
         }
 
         for (int t = 0; t < N - 2; t++)
         {
+            /*
+            In my experience, increasing the penalty factor for the steering 
+            angle gap will lead to a more stable control behaviour at higher velocity.
+            The factor can be very large(>1000) until the controller becomes more stable.
+            But you do not need it if you properly implemented latency compensation.
+            */
             fg[0] += 2000*(CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2)); // 200 
             fg[0] += 200*(CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2)); // 10
         }
@@ -111,7 +124,11 @@ public:
 //
 // MPC class definition implementation.
 //
-MPC::MPC() {}
+MPC::MPC() 
+{
+    prevDelta = 0.436332;
+    prevA = 1.0;
+}
 MPC::~MPC() {}
 
 vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
@@ -167,6 +184,11 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
         vars_lowerbound[i] = -1.0;
         vars_upperbound[i] = 1.0;
     }
+
+    vars_lowerbound[delta_start] = prevDelta;
+    vars_upperbound[delta_start] = prevDelta;
+    vars_lowerbound[a_start] = prevA;
+    vars_upperbound[a_start] = prevA;
 
     // Lower and upper limits for the constraints
     // Should be 0 besides initial state.
@@ -235,8 +257,14 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     // creates a 2 element double vector.
 
     vector<double> result;
-    result.push_back(solution.x[delta_start]);
-    result.push_back(solution.x[a_start]);
+
+    // take the next value instead (after 100ms)
+    result.push_back(solution.x[delta_start+1]);
+    result.push_back(solution.x[a_start+1]);
+
+    // store it in variables for next run
+    prevDelta = solution.x[delta_start + 1];
+    prevA = solution.x[a_start + 1];
 
     for (int i = 0; i < N - 1; i++)
     {
