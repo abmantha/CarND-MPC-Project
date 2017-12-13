@@ -78,8 +78,8 @@ public:
             The factor can be very large(>1000) until the controller becomes more stable.
             But you do not need it if you properly implemented latency compensation.
             */
-            fg[0] += 200*(CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2)); // 200 
-            fg[0] += 200*(CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2)); // 10
+            fg[0] += 10*(CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2)); // 200 
+            fg[0] += 10*(CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2)); // 10
         }
 
         fg[1 + x_start] = vars[x_start];
