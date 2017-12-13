@@ -58,7 +58,7 @@ public:
                 the car can overshoot the waypoint trajectory and starts to oscillating.
             */
                 // 800, 100, 100
-            fg[0] += 2000*CppAD::pow(vars[cte_start + t], 2); // 4000
+            fg[0] += 1000*CppAD::pow(vars[cte_start + t], 2); // 4000
             fg[0] += 100*CppAD::pow(vars[epsi_start + t], 2); // 100
             fg[0] += 100*CppAD::pow(vars[v_start + t] - ref_v, 2); // 100
         }

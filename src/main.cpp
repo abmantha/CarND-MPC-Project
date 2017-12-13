@@ -116,15 +116,15 @@ int main() {
           double cte = polyeval(coeffs, 0);
           double epsi = -atan(coeffs[1]);
 
-          // double latency = 0.1;
-          // double Lf = 2.67;
-          // px = 0;
-          // py = 0;
-          // // psi = v * delta / Lf * latency;
-          // psi = 0;
-          // v = v + acceleration * latency;
-          // cte = cte + v * std::sin(epsi) * latency;
-          // epsi = epsi + v * delta / Lf * latency;
+          double latency = 0.1;
+          double Lf = 2.67;
+          px = 0;
+          py = 0;
+          // psi = v * delta / Lf * latency;
+          psi = 0;
+          v = v + acceleration * latency;
+          cte = cte + v * std::sin(epsi) * latency;
+          epsi = epsi + v * delta / Lf * latency;
 
           Eigen::VectorXd state(6);
           state << 0, 0, 0, v, cte, epsi;
