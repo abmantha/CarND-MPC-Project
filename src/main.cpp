@@ -131,6 +131,24 @@ int main() {
           double steer_value = vars[0];
           double throttle_value = vars[1];
 
+          if (steer_value > 1)
+          {
+            steer_value = 1;
+          } 
+          else if (steer_value < -1)
+          {
+            steer_value = -1;
+          }
+
+          if (throttle_value > 1)
+          {
+            throttle_value = 1;
+          }
+          else if (throttle_value < -1)
+          {
+            throttle_value = -1;
+          }
+
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
