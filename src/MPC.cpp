@@ -52,21 +52,21 @@ public:
 
         for (int t = 0; t < N; t++)
         {
-            fg[0] += 4000*CppAD::pow(vars[cte_start + t] - ref_cte, 2);
-            fg[0] += CppAD::pow(vars[epsi_start + t] - ref_epsi, 2);
-            fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2); 
+            fg[0] += 2000*CppAD::pow(vars[cte_start + t] - ref_cte, 2); // 4000
+            fg[0] += 100*CppAD::pow(vars[epsi_start + t] - ref_epsi, 2); // 100
+            fg[0] += 100*CppAD::pow(vars[v_start + t] - ref_v, 2); // 100
         }
 
         for (int t = 0; t < N - 1; t++)
         {
-            fg[0] += 80000*CppAD::pow(vars[delta_start + t], 2); // 5
-            fg[0] += CppAD::pow(vars[a_start + t], 2); // 5
+            fg[0] += 80000*CppAD::pow(vars[delta_start + t], 2); // 1000
+            // fg[0] += CppAD::pow(vars[a_start + t], 2); // 5
         }
 
         for (int t = 0; t < N - 2; t++)
         {
-            fg[0] += 1000*CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2); // 200 
-            fg[0] += CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2); // 10
+            fg[0] += 200*CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2); // 200 
+            fg[0] += 100*CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2); // 10
         }
 
         fg[1 + x_start] = vars[x_start];
@@ -76,34 +76,34 @@ public:
         fg[1 + cte_start] = vars[cte_start];
         fg[1 + epsi_start] = vars[epsi_start];
 
-        for (int t = 0; t < N - 1; t++)
+        for (int t = 1; t < N; t++)
         {
-            AD<double> x1 = vars[x_start + t + 1];
-            AD<double> y1 = vars[y_start + t + 1];
-            AD<double> psi1 = vars[psi_start + t + 1];
-            AD<double> v1 = vars[v_start + t + 1];
-            AD<double> cte1 = vars[cte_start + t + 1];
-            AD<double> epsi1 = vars[epsi_start + t + 1];
+            AD<double> x1 = vars[x_start + t];
+            AD<double> y1 = vars[y_start + t];
+            AD<double> psi1 = vars[psi_start + t];
+            AD<double> v1 = vars[v_start + t];
+            AD<double> cte1 = vars[cte_start + t];
+            AD<double> epsi1 = vars[epsi_start + t];
 
-            AD<double> x0 = vars[x_start + t];
-            AD<double> y0 = vars[y_start + t];
-            AD<double> psi0 = vars[psi_start + t];
-            AD<double> v0 = vars[v_start + t];
-            AD<double> cte0 = vars[cte_start + t];
-            AD<double> epsi0 = vars[epsi_start + t];
+            AD<double> x0 = vars[x_start + t - 1];
+            AD<double> y0 = vars[y_start + t - 1];
+            AD<double> psi0 = vars[psi_start + t - 1];
+            AD<double> v0 = vars[v_start + t - 1];
+            AD<double> cte0 = vars[cte_start + t - 1];
+            AD<double> epsi0 = vars[epsi_start + t - 1];
 
-            AD<double> delta0 = vars[delta_start + t];
-            AD<double> alpha0 = vars[a_start + t];
+            AD<double> delta0 = vars[delta_start + t - 1];
+            AD<double> alpha0 = vars[a_start + t - 1];
 
             AD<double> f0 = coeffs[0] + coeffs[1]*x0 + coeffs[2]*x0*x0 + coeffs[3]*x0*x0*x0;
             AD<double> psi_des0 = CppAD::atan(coeffs[1] + 2*coeffs[2]*x0 + 3*coeffs[3]*x0*x0);
 
-            fg[x_start + t + 2] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
-            fg[y_start + t + 2] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
-            fg[psi_start + t + 2] = psi1 - (psi0 - v0 * delta0 / Lf * dt);
-            fg[v_start + t + 2] = v1 - (v0 + alpha0 * dt);
-            fg[cte_start + t + 2] = cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
-            fg[epsi_start + t + 2] = epsi1 - ((psi0 - psi_des0) - v0 * delta_start / Lf * dt);
+            fg[x_start + t + 1] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
+            fg[y_start + t + 1] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
+            fg[psi_start + t + 1] = psi1 - (psi0 - v0 * delta0 / Lf * dt);
+            fg[v_start + t + 1] = v1 - (v0 + alpha0 * dt);
+            fg[cte_start + t + 1] = cte1 - ((y0 - f0) + (v0 * CppAD::sin(epsi0) * dt));
+            fg[epsi_start + t + 1] = epsi1 - ((psi0 - psi_des0) - v0 * delta_start / Lf * dt);
         }
     }
 };
@@ -158,8 +158,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
 
     for (int i = delta_start; i < a_start; i++)
     {
-        vars_lowerbound[i] = -0.436332 * Lf;
-        vars_upperbound[i] = 0.436332 * Lf;
+        vars_lowerbound[i] = -0.436332;
+        vars_upperbound[i] = 0.436332;
     }
 
     for (int i = a_start; i < n_vars; i++)

@@ -8,6 +8,7 @@
 #include "Eigen-3.3/Eigen/QR"
 #include "MPC.h"
 #include "json.hpp"
+// #include "matplotlibcpp.h"
 
 // for convenience
 using json = nlohmann::json;
@@ -124,7 +125,7 @@ int main() {
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
           double Lf = 2.67;
-          msgJson["steering_angle"] = steer_value / (Lf*deg2rad(25.0));
+          msgJson["steering_angle"] = steer_value / (deg2rad(25.0));
           msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory 
