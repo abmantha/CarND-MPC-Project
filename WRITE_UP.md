@@ -42,7 +42,7 @@ The final values of N and dt are 25 and 0.05. The following are combinations of 
 
     * (10, 0.05) -- the car would start out fast, then fly off the curb very quickly 
 
-    * (25, 0.1) -- the car moves very slowly, it stops and starts, not ideal for the road
+    * (25, 0.1) -- the car moves very slowly, it stops and starts, not ideal for the road, and then eventually stops
 
 Lines 53-70 of MPC.cpp contain my cost function implementation for the IPOPT optimizer. I have a high coefficient for optimizing CTE as I want the model to stay towards the center of the lane as much as possible. In addition, I have lower coefficient values for epsi and v, with a relative epsi of 0 and relative v of 100. I found that if I did not include a high enough coefficient or any coefficient at all, the car would move backwards :(
 
